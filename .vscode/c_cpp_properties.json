@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "EspIDF",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/main/**",
+                "${IDF_PATH}/components/**"
+            ],
+            "defines": [
+                "ESP_PLATFORM"
+            ],
+            "compileCommands": [
+                "${workspaceFolder}/build/compile_commands.json" // MUST be included in source compiled ESP-IDF projects on VS Code
+            ],
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
