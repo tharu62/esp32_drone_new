@@ -14,6 +14,12 @@
 #define MPU6050_WHO_AM_I_REG_ADDR   0x75                        /*!< Register addresses of the "who am I" register */
 #define MPU6050_PWR_MGMT_1_REG_ADDR 0x6B                        /*!< Register addresses of the power management register */
 #define MPU6050_RESET_BIT           7
+#define MPU6050_ACCELEROMETER_DATA_REG_ADDR 0x3B               /*!< Register address where accelerometer data starts */
+#define MPU6050_GYROSCOPE_DATA_REG_ADDR     0x43               /*!< Register address where gyroscope data starts */
+
+float ROLL_CALIBRATION_OFFSET   = 0.0f;
+float PITCH_CALIBRATION_OFFSET  = 0.0f;
+float YAW_CALIBRATION_OFFSET    = 0.0f;
 
 /**
  * @brief Read a sequence of bytes from a MPU6050 sensor registers
@@ -54,6 +60,30 @@ static void i2c_master_init(i2c_master_bus_handle_t *bus_handle, i2c_master_dev_
     };
     ESP_ERROR_CHECK(i2c_master_bus_add_device(*bus_handle, &dev_config, dev_handle));
 }
+
+/**
+ * @brief Calibration function for MPU6050, calculates offsets for gyroscope. 
+ */
+static void mpu6050_calibration(i2c_master_dev_handle_t dev_handle, uint8_t *data)
+{
+    for(int i=0; i<2000; i++){
+        // ESP_ERROR_CHECK(mpu6050_register_read(dev_handle, MPU6050_ACCELEROMETER_DATA_REG_ADDR, data, 6));
+
+        ESP_ERROR_CHECK(mpu6050_register_read(dev_handle, MPU6050_GYROSCOPE_DATA_REG_ADDR, data, 6));
+        int16_t GYRO_RAWX = (data[0] << 8) | data[1];
+        int16_t GYRO_RAWY = (data[2] << 8) | data[3];
+        int16_t GYRO_RAWZ = (data[4] << 8) | data[5];
+        ROLL_CALIBRATION_OFFSET     += (float) GYRO_RAWX / 131.0f;
+        PITCH_CALIBRATION_OFFSET    += (float) GYRO_RAWY / 131.0f;
+        YAW_CALIBRATION_OFFSET      += (float) GYRO_RAWZ / 131.0f;
+
+        vTaskDelay(1 / portTICK_PERIOD_MS);
+    }
+    ROLL_CALIBRATION_OFFSET     /= 2000.0f;
+    PITCH_CALIBRATION_OFFSET    /= 2000.0f;  
+    YAW_CALIBRATION_OFFSET      /= 2000.0f;
+}
+
 
 /**
  * @brief Setup function for MPU6050 by :
