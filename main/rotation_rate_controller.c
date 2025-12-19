@@ -7,7 +7,7 @@
 #define I_PITCH_RATE 3.5f
 #define D_PITCH_RATE 0.03f
 #define P_YAW_RATE 2.0f
-#define I_YAW_RATE 12.0f
+#define I_YAW_RATE 0.0f
 #define D_YAW_RATE 0.0f
 
 

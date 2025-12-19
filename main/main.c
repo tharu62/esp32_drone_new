@@ -16,9 +16,12 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "driver/i2c_master.h"
+
 #include "mpu6050.c"
-#include "motor.h"
-#include "pid_controller.h"
+#include "angle_controller.h"
+#include "rotation_rate_controller.h"
+#include "motor_controller.h"
+#include "kalman_filter.h"
 
 static const char *TAG = "drone";
 
