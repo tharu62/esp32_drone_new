@@ -7,16 +7,14 @@
 #define MOTOR_H
 
 // Initialize the motor controller variables.
-void motor_control_init(void);
+void motor_controller_init(void);
 
 
 /**
  * @brief Control motors based on input commands
  * @param throttle 
- * @param roll
- * @param pitch
- * @param yaw 
+ * @param rotation_rate_output
  */
-void motor_control(float throttle, float roll, float pitch, float yaw);
+void motor_controller(float throttle, float* rotation_rate_output);
 
 #endif // MOTOR_H

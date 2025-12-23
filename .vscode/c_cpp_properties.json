@@ -11,7 +11,7 @@
                 "ESP_PLATFORM"
             ],
             "compileCommands": [
-                "${workspaceFolder}/build/compile_commands.json" // MUST be included in source compiled ESP-IDF projects on VS Code
+                "${workspaceFolder}/build/compile_commands.json"
             ],
             "intelliSenseMode": "gcc-x64"
         }

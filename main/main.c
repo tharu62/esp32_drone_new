@@ -17,7 +17,8 @@
 #include "esp_log.h"
 #include "driver/i2c_master.h"
 
-#include "mpu6050.c"
+#include "state.h"
+#include "mpu6050.h"
 #include "angle_controller.h"
 #include "rotation_rate_controller.h"
 #include "motor_controller.h"
@@ -30,41 +31,67 @@ static const char *TAG = "drone";
  */
 void app_main(void)
 {
-    uint8_t data[10];
+    uint8_t data[10]; // Buffer for I2C data, oversized for safety.
     i2c_master_bus_handle_t bus_handle;
     i2c_master_dev_handle_t dev_handle;
     i2c_master_init(&bus_handle, &dev_handle);
     ESP_LOGI(TAG, "I2C initialized successfully");
 
+    State drone_state;
+    init_state(&drone_state);
+
     mpu6050_setup(dev_handle, data);
     mpu6050_calibration(dev_handle, data);
 
-    // Read accelerometer and gyroscope data in a loop
-    while(true){
+    angle_controller_init();
+    rotation_rate_controller_init();
+    motor_controller_init();
+    reset_kalman_filter();
 
-        /************* ACCELEROMETER *********/
-        ESP_ERROR_CHECK(mpu6050_register_read(dev_handle, MPU6050_ACCELEROMETER_DATA_REG_ADDR, data, 6));
-        int16_t RAWX = (data[0]<<8) | data[1];
-        int16_t RAWY = (data[2]<<8) | data[3];
-        int16_t RAWZ = (data[4]<<8) | data[5];
-        // UPDATED FOR ±8g RANGE  → 4096 LSB/g
-        float xg = (float) RAWX / 4096.0f;
-        float yg = (float) RAWY / 4096.0f;
-        float zg = (float) RAWZ / 4096.0f;
-        ESP_LOGI("acceleration : ", "x=%f y=%f z=%f", xg, yg, zg);
+    // // Read accelerometer and gyroscope data in a loop
+    // while(true){
 
-        /************* GYROSCOPE *************/
-        ESP_ERROR_CHECK(mpu6050_register_read(dev_handle, MPU6050_GYROSCOPE_DATA_REG_ADDR, data, 6));
-        int16_t GYRO_RAWX = (data[0] << 8) | data[1];
-        int16_t GYRO_RAWY = (data[2] << 8) | data[3];
-        int16_t GYRO_RAWZ = (data[4] << 8) | data[5];
-        float gyroX = (float) GYRO_RAWX / 131.0f - ROLL_CALIBRATION_OFFSET;
-        float gyroY = (float) GYRO_RAWY / 131.0f - PITCH_CALIBRATION_OFFSET;
-        float gyroZ = (float) GYRO_RAWZ / 131.0f - YAW_CALIBRATION_OFFSET;
-        ESP_LOGI("gyroscope : ", "x=%f y=%f z=%f [deg/s]", gyroX, gyroY, gyroZ);
+    //     /************* ACCELEROMETER *********/
+    //     mpu6050_get_angle(dev_handle, data, &drone_state.m_angle[0], &drone_state.m_angle[1]);
+    //     ESP_LOGI("angles : ", "x=%f y=%f z=%f [deg]", drone_state.m_angle[0], drone_state.m_angle[1], drone_state.m_angle[2]);
+    //     /************* GYROSCOPE *************/
+    //     mpu6050_get_rotation_rate(dev_handle, data, &drone_state.angular_velocity[0], &drone_state.angular_velocity[1], &drone_state.angular_velocity[2]);
+    //     ESP_LOGI("gyroscope : ", "x=%f y=%f z=%f [deg/s]", drone_state.angular_velocity[0], drone_state.angular_velocity[1], drone_state.angular_velocity[2]);
 
-        //if(???) break;
-        vTaskDelay(200 / portTICK_PERIOD_MS);
+    //     //if(???) break;
+    //     vTaskDelay(500 / portTICK_PERIOD_MS);
+    // }
+
+
+
+    float desired_angles[3] = {0.0f, 0.0f, 0.0f};           // Placeholder for desired angles (roll, pitch, yaw)
+    float throttle = 0.5f;                                  // Placeholder for throttle input
+    float desired_rotation_rate[3] = {0.0f, 0.0f, 0.0f};    // Placeholder for desired rotation rates (roll rate, pitch rate, yaw rate)
+    float rotation_rate_output[3] = {0.0f, 0.0f, 0.0f};     // Placeholder for rotation rate controller outputs
+
+    float dt = 0.01f; // Time step for control loop (10 ms)
+    // Main control loop
+    while (true) {
+        // Read Input from user (desired angles)
+        // @todo: Implement user input reading here
+
+        // Run angle controller pid to get desired rotation rates
+        angle_pid_controller(desired_angles, &drone_state, dt, desired_rotation_rate);
+
+        // Run rotation rate controller pid to get motor commands
+        rotation_rate_pid_controller(desired_rotation_rate, &drone_state, dt, rotation_rate_output);
+
+        // Update motor speeds by pwm signals
+        motor_controller(throttle, rotation_rate_output);
+
+        // Read sensor data
+        mpu6050_get_angle(dev_handle, data, &drone_state.m_angle[0], &drone_state.m_angle[1]);
+        mpu6050_get_rotation_rate(dev_handle, data, &drone_state.angular_velocity[0], &drone_state.angular_velocity[1], &drone_state.angular_velocity[2]);
+
+        // RUn Kalman filter to update state estimation
+        kalman_filter(&drone_state, dt); // Assuming a fixed time step of 10ms
+
+        vTaskDelay(dt / portTICK_PERIOD_MS); // Delay for 10ms
     }
 
     // Cleanup

@@ -31,17 +31,18 @@ void angle_controller_init(void)
     return;
 }
 
-void angle_pid_controller(float roll_angle_error, float pitch_angle_error, float yaw_angle_error, float dt,
-                                    float* roll_output, float* pitch_output)
+void angle_pid_controller(float* desired_angles, State* drone_state, float dt, float* desired_rotation_rate)
 {
+    float roll_angle_error = desired_angles[0] - drone_state->m_angle[0];
+    float pitch_angle_error = desired_angles[1] - drone_state->m_angle[1];
     roll_angle_integral +=  roll_angle_error * dt;
     pitch_angle_integral +=  pitch_angle_error * dt;
     
     float roll_angle_derivative = (roll_angle_error - previous_roll_angle_error) / dt;
     float pitch_angle_derivative = (pitch_angle_error - previous_pitch_angle_error) / dt;
     
-    *roll_output = P_ROLL_ANGLE * roll_angle_error + I_ROLL_ANGLE * roll_angle_integral + D_ROLL_ANGLE * roll_angle_derivative;
-    *pitch_output = P_PITCH_ANGLE * pitch_angle_error + I_PITCH_ANGLE * pitch_angle_integral + D_PITCH_ANGLE * pitch_angle_derivative;
+    desired_rotation_rate[0] = P_ROLL_ANGLE * roll_angle_error + I_ROLL_ANGLE * roll_angle_integral + D_ROLL_ANGLE * roll_angle_derivative;
+    desired_rotation_rate[1] = P_PITCH_ANGLE * pitch_angle_error + I_PITCH_ANGLE * pitch_angle_integral + D_PITCH_ANGLE * pitch_angle_derivative;
     
     previous_roll_angle_error = roll_angle_error;
     previous_pitch_angle_error = pitch_angle_error;

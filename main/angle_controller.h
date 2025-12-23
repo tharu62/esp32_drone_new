@@ -4,8 +4,9 @@
 #ifndef ANGLE_CONTROLLER_H
 #define ANGLE_CONTROLLER_H
 
+#include "state.h"
+
 void angle_controller_init(void);
-void angle_pid_controller(float roll_angle_error, float pitch_angle_error, float yaw_angle_error, float dt,
-                                    float* roll_output, float* pitch_output);
+void angle_pid_controller(float* desired_angles, State* drone_state, float dt, float* desired_rotation_rate);
 
 #endif // ANGLE_CONTROLLER_H

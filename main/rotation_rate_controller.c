@@ -31,9 +31,12 @@ void rotation_rate_controller_init(void)
     return;
 }
 
-void rotation_rate_pid_controller(float roll_rate_error, float pitch_rate_error, float yaw_rate_error, float dt,
-                                    float* roll_output, float* pitch_output, float* yaw_output)
+void rotation_rate_pid_controller(float* desired_rotation_rate, State* drone_state, float dt, float* rotation_rate_output)
 {
+    float roll_rate_error = desired_rotation_rate[0] - drone_state->angular_velocity[0];
+    float pitch_rate_error = desired_rotation_rate[1] - drone_state->angular_velocity[1];
+    float yaw_rate_error = desired_rotation_rate[2] - drone_state->angular_velocity[2];
+
     roll_rate_integral +=  roll_rate_error * dt;
     pitch_rate_integral +=  pitch_rate_error * dt;
     yaw_rate_integral +=  yaw_rate_error * dt;
@@ -42,9 +45,9 @@ void rotation_rate_pid_controller(float roll_rate_error, float pitch_rate_error,
     float pitch_rate_derivative = (pitch_rate_error - previous_pitch_rate_error) / dt;
     float yaw_rate_derivative = (yaw_rate_error - previous_yaw_rate_error) / dt;
     
-    *roll_output = P_ROLL_RATE * roll_rate_error + I_ROLL_RATE * roll_rate_integral + D_ROLL_RATE * roll_rate_derivative;
-    *pitch_output = P_PITCH_RATE * pitch_rate_error + I_PITCH_RATE * pitch_rate_integral + D_PITCH_RATE * pitch_rate_derivative;
-    *yaw_output = P_YAW_RATE * yaw_rate_error + I_YAW_RATE * yaw_rate_integral + D_YAW_RATE * yaw_rate_derivative;
+    rotation_rate_output[0] = P_ROLL_RATE * roll_rate_error + I_ROLL_RATE * roll_rate_integral + D_ROLL_RATE * roll_rate_derivative;
+    rotation_rate_output[1] = P_PITCH_RATE * pitch_rate_error + I_PITCH_RATE * pitch_rate_integral + D_PITCH_RATE * pitch_rate_derivative;
+    rotation_rate_output[2] = P_YAW_RATE * yaw_rate_error + I_YAW_RATE * yaw_rate_integral + D_YAW_RATE * yaw_rate_derivative;
     
     previous_roll_rate_error = roll_rate_error;
     previous_pitch_rate_error = pitch_rate_error;
