@@ -91,9 +91,14 @@ void mpu6050_setup(i2c_master_dev_handle_t dev_handle, uint8_t *data)
     ESP_ERROR_CHECK(mpu6050_register_write_byte(dev_handle, 0x1C, 0x10)); 
 }
 
-void mpu6050_get_angle(i2c_master_dev_handle_t dev_handle, uint8_t *data, float *angle_x, float *angle_y)
+void mpu6050_get_angle(i2c_master_dev_handle_t dev_handle, i2c_master_bus_handle_t bus_handle, uint8_t *data, float *angle_x, float *angle_y)
 {
-    ESP_ERROR_CHECK(mpu6050_register_read(dev_handle, MPU6050_ACCELEROMETER_DATA_REG_ADDR, data, 6));
+    // ESP_ERROR_CHECK(mpu6050_register_read(dev_handle, MPU6050_ACCELEROMETER_DATA_REG_ADDR, data, 6));
+    while (mpu6050_register_read(dev_handle, MPU6050_ACCELEROMETER_DATA_REG_ADDR, data, 6) != ESP_OK) {
+        ESP_LOGI("mpu6050", "Failed to read accelerometer data, retrying...");
+        i2c_master_bus_reset(bus_handle);
+        vTaskDelay(10 / portTICK_PERIOD_MS); // Wait and retry after 10 millisecond if read fails
+    }
     int16_t RAWX = (data[0]<<8) | data[1];
     int16_t RAWY = (data[2]<<8) | data[3];
     int16_t RAWZ = (data[4]<<8) | data[5];
@@ -106,9 +111,14 @@ void mpu6050_get_angle(i2c_master_dev_handle_t dev_handle, uint8_t *data, float 
     *angle_y = atan2f(-xg, sqrtf(yg * yg + zg * zg)) * 180.0f / M_PI;
 }
 
-void mpu6050_get_rotation_rate(i2c_master_dev_handle_t dev_handle, uint8_t *data, float *gyroX, float *gyroY, float *gyroZ)
+void mpu6050_get_rotation_rate(i2c_master_dev_handle_t dev_handle, i2c_master_bus_handle_t bus_handle, uint8_t *data, float *gyroX, float *gyroY, float *gyroZ)
 {
-    ESP_ERROR_CHECK(mpu6050_register_read(dev_handle, MPU6050_GYROSCOPE_DATA_REG_ADDR, data, 6));
+    // ESP_ERROR_CHECK(mpu6050_register_read(dev_handle, MPU6050_GYROSCOPE_DATA_REG_ADDR, data, 6));
+    while (mpu6050_register_read(dev_handle, MPU6050_GYROSCOPE_DATA_REG_ADDR, data, 6) != ESP_OK) {
+        ESP_LOGI("mpu6050", "Failed to read gyroscope data, retrying...");
+        i2c_master_bus_reset(bus_handle);
+        vTaskDelay(10 / portTICK_PERIOD_MS); // Wait and retry after 10 millisecond if read fails
+    }
     int16_t GYRO_RAWX = (data[0] << 8) | data[1];
     int16_t GYRO_RAWY = (data[2] << 8) | data[3];
     int16_t GYRO_RAWZ = (data[4] << 8) | data[5];

@@ -40,11 +40,11 @@ void mpu6050_setup(i2c_master_dev_handle_t dev_handle, uint8_t *data);
 /**
  * @brief Get roll and pitch angles from accelerometer data
  */
-void mpu6050_get_angle(i2c_master_dev_handle_t dev_handle, uint8_t *data, float *angle_x, float *angle_y);
+void mpu6050_get_angle(i2c_master_dev_handle_t dev_handle, i2c_master_bus_handle_t bus_handle, uint8_t *data, float *angle_x, float *angle_y);
 
 /**
  * @brief Get rotation rates from gyroscope data
  */
-void mpu6050_get_rotation_rate(i2c_master_dev_handle_t dev_handle, uint8_t *data, float *gyroX, float *gyroY, float *gyroZ);
+void mpu6050_get_rotation_rate(i2c_master_dev_handle_t dev_handle, i2c_master_bus_handle_t bus_handle, uint8_t *data, float *gyroX, float *gyroY, float *gyroZ);
 
 #endif // MPU6050_H
